@@ -4,7 +4,6 @@ module Day1 where
 import qualified Data.Text.IO as TIO
 import qualified Data.Text as T
 import qualified Data.Set as S
-import Data.List (foldl')
 
 getInput :: IO [Integer]
 getInput = map (read . filter (/= '+') . T.unpack) . T.lines <$> TIO.readFile "./input/day1.txt"
