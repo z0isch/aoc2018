@@ -36,6 +36,8 @@ executables:
     - -Wall
     dependencies:
     - aoc2018
+    - text
+    - containers
 
 tests:
   aoc2018-test:
