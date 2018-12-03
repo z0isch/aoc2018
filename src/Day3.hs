@@ -32,9 +32,14 @@ fileParser :: Parsec Void Text [R]
 fileParser = many (rParser <* (void eol <|> eof))
 
 rParser :: Parsec Void Text R
-rParser = R <$> idParser <*> (string " @ " *> coordP <* string ": ") <*> decimal <* char 'x' <*> decimal
+rParser = R
+    <$> (char '#' *> decimal)
+    <*> (string " @ " *> coordP)
+    <* string ": "
+    <*> decimal
+    <* char 'x'
+    <*> decimal
     where
-        idParser = (char '#' *> decimal)
         coordP = (,) <$> decimal <* char ',' <*> decimal
 
 ptsR :: R -> Set C
