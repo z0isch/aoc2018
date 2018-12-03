@@ -38,6 +38,7 @@ executables:
     - aoc2018
     - text
     - containers
+    - megaparsec
 
 tests:
   aoc2018-test:
