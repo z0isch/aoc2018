@@ -23,12 +23,12 @@ uniqueLetters xs = is 2 * is 3
 part2 :: IO String
 part2 = head . findDiff <$> getInput
 
-permWith :: (a -> a -> b) -> [a] -> [b]
-permWith _ []     = []
-permWith f (x:xs) = map (f x) xs ++ permWith f xs
+combinationsWith :: (a -> a -> b) -> [a] -> [b]
+combinationsWith _ []     = []
+combinationsWith f (x:xs) = map (f x) xs ++ combinationsWith f xs
 
 findDiff :: [String] -> [String]
-findDiff = catMaybes . permWith foo
+findDiff = catMaybes . combinationsWith foo
     where
         foo x y =
             if length ne == 1

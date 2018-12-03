@@ -45,12 +45,12 @@ rParser = R
 ptsR :: R -> Set C
 ptsR (R _ (x, y) w h) = S.fromList [(x', y') | x' <- [x..x+w-1], y' <- [y..y+h-1]]
 
-permWith :: (a -> a -> b) -> [a] -> [b]
-permWith _ []     = []
-permWith f (x:xs) = map (f x) xs ++ permWith f xs
+combinationsWith :: (a -> a -> b) -> [a] -> [b]
+combinationsWith _ []     = []
+combinationsWith f (x:xs) = map (f x) xs ++ combinationsWith f xs
 
 intersections :: [R] -> Set C
-intersections = S.unions . permWith S.intersection . map ptsR
+intersections = S.unions . combinationsWith S.intersection . map ptsR
 
 noIntersections :: [R] -> [R]
 noIntersections rs = filter (S.null . S.intersection (intersections rs) . ptsR) rs
