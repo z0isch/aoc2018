@@ -34,10 +34,8 @@ fileParser = many (rParser <* (void eol <|> eof))
 rParser :: Parsec Void Text R
 rParser = R
     <$> (char '#' *> decimal)
-    <*> (string " @ " *> coordP)
-    <* string ": "
-    <*> decimal
-    <* char 'x'
+    <*> (string " @ " *> coordP <* string ": ")
+    <*> (decimal <* char 'x')
     <*> decimal
     where
         coordP = (,) <$> decimal <* char ',' <*> decimal

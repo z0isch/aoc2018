@@ -29,6 +29,8 @@ library:
     - containers
     - megaparsec
     - lens
+    - SegmentTree
+    - time
 
 executables:
   aoc2018-exe:
