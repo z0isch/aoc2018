@@ -27,18 +27,7 @@ data DateTime = DateTime
   }
   deriving (Show, Eq)
 instance Ord DateTime where
-  compare (DateTime y1 m1 d1 h1 min1) (DateTime y2 m2 d2 h2 min2)
-    | y1 > y2 = GT
-    | y1 < y2 = LT
-    | m1 > m2 = GT
-    | m1 < m2 = LT
-    | d1 > d2 = GT
-    | d1 < d2 = LT
-    | h1 > h2 = GT
-    | h1 < h2 = LT
-    | min1 > min2 = GT
-    | min1 < min2 = LT
-    | otherwise = EQ
+  compare d1 d2 = foldMap (\f -> compare (f d1) (f d2)) [dtY, dtM, dtD, dtH, dtMin]
 
 data Action
   = BeginShift Integer
@@ -82,7 +71,7 @@ mkSleepIntervals = go M.empty . sortOn fst
           sched = zipWith mkSched currShift (tail currShift)
           m' = foldl' b m $ catMaybes sched
             where
-              b x (k,v) = M.alter (Just . maybe [v] (\vs -> vs <> [v])) k x
+              b x (k,v) = M.alter (Just . maybe (pure v) (<> pure v)) k x
           mkSched (d1,Sleep) (d2,_) = Just (i,(dtMin d1, dtMin d2 - 1))
           mkSched _ _               = Nothing
       go _ _ = error "Bad schedule"
