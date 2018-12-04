@@ -5,14 +5,15 @@ module Day4 where
 
 import           Control.Monad
 import           Data.Function
+import           Data.IntervalMap.FingerTree as FT
 import           Data.List
-import           Data.Map.Strict            (Map)
-import qualified Data.Map.Strict            as M
+import           Data.Map.Strict             (Map)
+import qualified Data.Map.Strict             as M
 import           Data.Maybe
-import qualified Data.SegmentTree           as ST
-import           Data.Semigroup             ((<>))
-import           Data.Text                  (Text)
-import qualified Data.Text.IO               as TIO
+import qualified Data.SegmentTree            as ST
+import           Data.Semigroup              ((<>))
+import           Data.Text                   (Text)
+import qualified Data.Text.IO                as TIO
 import           Data.Void
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
@@ -76,11 +77,21 @@ mkSleepIntervals = go M.empty . sortOn fst
           mkSched _ _               = Nothing
       go _ _ = error "Bad schedule"
 
+intervalHistogram' ::(Ord a, Enum a, Num b) => [(a, a)] -> [(a, b)]
+intervalHistogram' rs = fmap (\x -> (x, genericLength $ FT.search x iMap)) range
+    where
+      range = maybe [] (\(FT.Interval l h) -> [l..h]) $ bounds iMap
+      iMap = foldr (\(l,h) -> FT.insert (FT.Interval l h) "") FT.empty rs
+
+intervalHistogram :: (Ord a, Num b, Num a) => [(a, a)] -> [a] -> [(a, b)]
+intervalHistogram rs = map (\x -> (x, ST.countingQuery stTree x))
+    where stTree = ST.fromList rs
+
 maxGuardTimeAsleep :: Map Integer [SleepInterval] -> (Integer, Integer)
 maxGuardTimeAsleep = maximumBy (compare `on` snd) . M.toList . fmap (sum . map (\(x,y) -> y-x))
 
 maxMinute :: [SleepInterval] -> (Integer, Integer)
-maxMinute rs = (maximumBy (compare `on` snd) $ map (\x -> (x, ST.countingQuery (ST.fromList rs) x)) [0..59])
+maxMinute rs = maximumBy (compare `on` snd) $ intervalHistogram' rs
 
 maxGuardMinuteAsleep :: Map Integer [SleepInterval] -> (Integer, (Integer, Integer))
 maxGuardMinuteAsleep = maximumBy (compare `on` (snd . snd)) . M.toList . fmap maxMinute

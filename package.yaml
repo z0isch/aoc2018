@@ -30,6 +30,7 @@ library:
     - megaparsec
     - lens
     - SegmentTree
+    - fingertree
     - time
 
 executables:
