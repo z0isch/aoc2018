@@ -33,12 +33,12 @@ fileParser = many (rParser <* (void eol <|> eof))
 
 rParser :: Parsec Void Text R
 rParser = R
-    <$> (char '#' *> decimal)
-    <*> (string " @ " *> coordP <* string ": ")
-    <*> (decimal <* char 'x')
-    <*> decimal
+    <$ "#" <*> decimal
+    <* " @ " <*> coordP
+    <* ": " <*> decimal
+    <* "x" <*> decimal
     where
-        coordP = (,) <$> decimal <* char ',' <*> decimal
+        coordP = (,) <$> decimal <* "," <*> decimal
 
 ptsR :: R -> Set C
 ptsR (R _ (x, y) w h) = S.fromList [(x', y') | x' <- [x..x+w-1], y' <- [y..y+h-1]]

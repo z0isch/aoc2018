@@ -45,17 +45,22 @@ fileP :: Parsec Void Text [(DateTime, Action)]
 fileP = many (totP <* (void eol <|> eof))
 
 dtP :: Parsec Void Text DateTime
-dtP = DateTime <$> decimal <* char '-' <*> decimal <* char '-' <*> decimal <* char ' ' <*> decimal <* char ':' <*> decimal
+dtP = DateTime
+  <$> decimal
+  <* "-" <*> decimal
+  <* "-" <*> decimal
+  <* " " <*> decimal
+  <* ":" <*> decimal
 
 actionP :: Parsec Void Text Action
 actionP = beg <|> sleep <|> wakeUp
   where
-    beg = BeginShift <$> (string "Guard #" *> decimal <* " begins shift")
-    sleep = Sleep <$ string "falls asleep"
-    wakeUp = WakeUp <$ string "wakes up"
+    beg = BeginShift <$ "Guard #" <*> decimal <* " begins shift"
+    sleep = Sleep <$ "falls asleep"
+    wakeUp = WakeUp <$ "wakes up"
 
 totP :: Parsec Void Text (DateTime,Action)
-totP = (,) <$> between (char '[') (char ']') dtP <* char ' ' <*> actionP
+totP = (,) <$> between "[" "]" dtP <* " " <*> actionP
 
 type SleepInterval = (Integer,Integer)
 
