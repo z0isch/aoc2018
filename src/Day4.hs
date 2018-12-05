@@ -77,21 +77,24 @@ mkSleepIntervals = go M.empty . sortOn fst
           mkSched _ _               = Nothing
       go _ _ = error "Bad schedule"
 
-intervalHistogram' ::(Ord a, Enum a, Num b) => [(a, a)] -> [(a, b)]
-intervalHistogram' rs = fmap (\x -> (x, genericLength $ FT.search x iMap)) range
+intervalHistogram ::(Ord a, Enum a, Num b) => [(a, a)] -> [(a, b)]
+intervalHistogram rs = fmap (\x -> (x, genericLength $ FT.search x iMap)) range
     where
       range = maybe [] (\(FT.Interval l h) -> [l..h]) $ bounds iMap
-      iMap = foldr (\(l,h) -> FT.insert (FT.Interval l h) "") FT.empty rs
+      iMap = foldr (\(l,h) -> FT.insert (FT.Interval l h) ("" :: Text)) FT.empty rs
 
-intervalHistogram :: (Ord a, Num b, Num a) => [(a, a)] -> [a] -> [(a, b)]
-intervalHistogram rs = map (\x -> (x, ST.countingQuery stTree x))
+intervalHistogram' :: (Ord a, Num b, Num a) => [(a, a)] -> [a] -> [(a, b)]
+intervalHistogram' rs = map (\x -> (x, ST.countingQuery stTree x))
     where stTree = ST.fromList rs
 
-maxGuardTimeAsleep :: Map Integer [SleepInterval] -> (Integer, Integer)
-maxGuardTimeAsleep = maximumBy (compare `on` snd) . M.toList . fmap (sum . map (\(x,y) -> y-x))
+sleepSum :: [SleepInterval] -> Integer
+sleepSum = sum . map (\(x,y) -> y-x)
 
 maxMinute :: [SleepInterval] -> (Integer, Integer)
-maxMinute rs = maximumBy (compare `on` snd) $ intervalHistogram' rs
+maxMinute = maximumBy (compare `on` snd) . intervalHistogram
+
+maxGuardTimeAsleep :: Map Integer [SleepInterval] -> (Integer, (Integer, Integer))
+maxGuardTimeAsleep = maximumBy (compare `on` (snd . snd)) . M.toList . fmap (\xs -> (fst (maxMinute xs), sleepSum xs))
 
 maxGuardMinuteAsleep :: Map Integer [SleepInterval] -> (Integer, (Integer, Integer))
 maxGuardMinuteAsleep = maximumBy (compare `on` (snd . snd)) . M.toList . fmap maxMinute
@@ -99,9 +102,7 @@ maxGuardMinuteAsleep = maximumBy (compare `on` (snd . snd)) . M.toList . fmap ma
 part1Sol :: [(DateTime,Action)] -> Integer
 part1Sol xs = g * m
   where
-    intervals = mkSleepIntervals xs
-    (g,_) = maxGuardTimeAsleep intervals
-    (m,_) = maxMinute (intervals M.! g)
+    (g,(m,_)) = maxGuardTimeAsleep $ mkSleepIntervals xs
 
 part2Sol :: [(DateTime,Action)] -> Integer
 part2Sol xs = g * m

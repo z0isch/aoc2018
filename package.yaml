@@ -32,6 +32,7 @@ library:
     - SegmentTree
     - fingertree
     - time
+    - foldl
 
 executables:
   aoc2018-exe:
