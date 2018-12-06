@@ -4,15 +4,9 @@
 module Day6 where
 
 import           Control.Monad
-import           Data.Bool
 import           Data.Function
 import           Data.List
-import           Data.Map.Strict            (Map)
-import qualified Data.Map.Strict            as M
 import           Data.Maybe
-import           Data.Semigroup             ((<>))
-import           Data.Set                   (Set)
-import qualified Data.Set                   as S
 import           Data.Text                  (Text)
 import qualified Data.Text                  as T
 import qualified Data.Text.IO               as TIO
