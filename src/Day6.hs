@@ -71,8 +71,8 @@ part1Sol cs = snd
   $ ptsInBox
   $ boundingBox cs
 
-part2Sol :: Integer -> [C] -> Int
-part2Sol m cs = length
+part2Sol :: Integer -> [C] -> Integer
+part2Sol m cs = genericLength
   $ filter (< m)
   $ map (\p -> sum $ map (manhattenDist p) cs)
   $ ptsInBox
@@ -81,7 +81,7 @@ part2Sol m cs = length
 part1 :: IO Integer
 part1 = part1Sol <$> parseInput
 
-part2 :: IO Int
+part2 :: IO Integer
 part2 = part2Sol 10000 <$> parseInput
 
 test :: [C]
