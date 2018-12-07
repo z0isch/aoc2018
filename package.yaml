@@ -33,6 +33,7 @@ library:
     - fingertree
     - time
     - foldl
+    - mtl
 
 executables:
   aoc2018-exe:
