@@ -11,6 +11,7 @@ import           Data.Text                  (Text)
 import qualified Data.Text                  as T
 import qualified Data.Text.IO               as TIO
 import           Data.Void
+import           Lib
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import           Text.Megaparsec.Char.Lexer
@@ -58,12 +59,9 @@ closestPts cs c = minimumsBy (manhattenDist c) cs
 closestCandidatePts :: [C] -> C -> [C]
 closestCandidatePts cs = filter (`elem` candidatePts cs) . closestPts cs
 
-histogram :: (Eq a, Ord a) => [a] -> [(a,Integer)]
-histogram = map (\(x:xs) -> (x, genericLength xs)) . group. sort
-
 part1Sol :: [C] -> Integer
-part1Sol cs = snd
-  $ maximumBy (compare `on` snd)
+part1Sol cs = maximum
+  $ map snd
   $ histogram
   $ concat
   $ filter ((==) 1 . length)
