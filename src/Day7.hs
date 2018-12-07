@@ -31,6 +31,17 @@ reqs rs = M.fromListWith ((++)) $ concatMap (\(x,y) -> [(y,[x])]) rs
 removeStepFromDeps :: Deps -> Step -> Deps
 removeStepFromDeps m s = M.filter (not . null) $ fmap (delete s) m
 
+data AState = AState
+  { aUndone :: Set Step
+  , aDone   :: Set Step
+  , aDeps   :: Deps
+  , aOrder  :: [Step]
+  }
+  deriving (Eq,Show)
+
+initAState :: [Req] -> AState
+initAState rs = AState (allSteps rs) mempty (reqs rs) []
+
 doAStep :: AState -> AState
 doAStep (AState unDone done rs order) = AState unDone' done' rs' order'
   where
@@ -40,20 +51,11 @@ doAStep (AState unDone done rs order) = AState unDone' done' rs' order'
     order' = order++[step]
     step = S.findMin $ S.filter (`M.notMember` rs) unDone
 
-data AState = AState
-  { aUndone :: Set Step
-  , aDone   :: Set Step
-  , aDeps   :: Deps
-  , aOrder  :: [Step]
-  }
-  deriving (Eq,Show)
-
 part1Sol :: [Req] -> AState
 part1Sol rs = head
-  $ dropWhile ((< S.size aSteps) . S.size . aDone)
+  $ dropWhile ((< S.size (allSteps rs)) . S.size . aDone)
   $ iterate doAStep
-  $ AState aSteps mempty (reqs rs) []
-  where aSteps = allSteps rs
+  $ initAState rs
 
 type Time = Int
 type WorkerId = Int
@@ -71,8 +73,8 @@ data CState = CState
   }
   deriving (Eq,Show)
 
-initState :: Int -> Int -> [Req] -> CState
-initState numWorkers offset cs = CState numWorkers offset aSteps mempty boredWorkers (reqs cs) (-1)
+initCState :: Int -> Int -> [Req] -> CState
+initCState numWorkers offset cs = CState numWorkers offset aSteps mempty boredWorkers (reqs cs) (-1)
   where
     aSteps = allSteps cs
     boredWorkers = M.fromList $ map (\x -> (x,Nothing)) [1..numWorkers]
@@ -83,8 +85,8 @@ doCStep (CState numWorkers offset notWorkingOn done ws rs t) = CState numWorkers
 
       justFinishedWorkers = M.filter justDoneFilter ws
       justDoneFilter Nothing = False
-      justDoneFilter (Just (c,t))
-        | t == (ord c - 64) + offset = True
+      justDoneFilter (Just (c,wt))
+        | wt == (ord c - 64) + offset = True
         | otherwise = False
 
       justNowDone = S.fromList $ catMaybes $ map (fmap fst) $ M.elems $ justFinishedWorkers
@@ -93,8 +95,8 @@ doCStep (CState numWorkers offset notWorkingOn done ws rs t) = CState numWorkers
 
       availableWorkers = M.filter available ws
       available Nothing = True
-      available (Just (c,t))
-        | t == (ord c - 64) + offset = True
+      available (Just (c,wt))
+        | wt == (ord c - 64) + offset = True
         | otherwise = False
 
       stepCandidates = S.filter (`M.notMember` rs') notWorkingOn
@@ -112,7 +114,7 @@ part2Sol :: Int -> Int -> [Req] -> CState
 part2Sol numWorkers offset rs = head
   $ dropWhile ((< S.size (allSteps rs)) . S.size . cDone)
   $ iterate doCStep
-  $ initState numWorkers offset rs
+  $ initCState numWorkers offset rs
 
 part1 :: IO [Step]
 part1= aOrder. part1Sol <$> input
