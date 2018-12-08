@@ -34,6 +34,7 @@ library:
     - time
     - foldl
     - mtl
+    - safe
 
 executables:
   aoc2018-exe:
