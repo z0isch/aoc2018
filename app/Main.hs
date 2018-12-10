@@ -3,4 +3,6 @@ module Main where
 import           Day10
 
 main :: IO ()
-main =part2 >>= print
+main = do
+  part1
+  part2 >>= print
