@@ -1,6 +1,6 @@
 module Day9 where
 
-import Data.List
+import           Data.List
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 
@@ -30,10 +30,13 @@ placeMarble (scores, curr,ms) new
 playGame :: Int -> Int -> [(Scores, Int,[Int])]
 playGame numPlayers marbles = scanl' placeMarble (initial numPlayers) [2..marbles]
 
-part1Sol numPlayers marbles = maximum $ map sum $ M.elems $ (\(s,_,_) -> s) $ last $ playGame numPlayers marbles
+playGame' numPlayers marbles = foldl' placeMarble (initial numPlayers) [2..marbles]
 
+
+part1Sol numPlayers marbles = maximum $ map sum $ M.elems $ (\(s,_,_) -> s) $ last $ playGame numPlayers marbles
+part2Sol numPlayers marbles = maximum $ map sum $ M.elems $ (\(s,_,_) -> s) $ playGame' numPlayers marbles
 part1 = part1Sol 423 71944
-part2 = undefined
+part2 = part2Sol 423 (71944 * 100)
 
 testWorks :: [Bool]
 testWorks = zipWith testEq (lines test) (playGame 9 25)

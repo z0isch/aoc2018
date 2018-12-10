@@ -35,6 +35,7 @@ library:
     - foldl
     - mtl
     - safe
+    - JuicyPixels
 
 executables:
   aoc2018-exe:

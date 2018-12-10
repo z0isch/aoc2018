@@ -1,6 +1,6 @@
 module Main where
 
-import           Day9
+import           Day10
 
 main :: IO ()
-main = print part1
+main =part2 >>= print
