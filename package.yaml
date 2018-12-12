@@ -36,6 +36,9 @@ library:
     - mtl
     - safe
     - JuicyPixels
+    - parallel
+    - massiv
+    - repa
 
 executables:
   aoc2018-exe:

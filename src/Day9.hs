@@ -3,49 +3,59 @@ module Day9 where
 import           Data.List
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import           Data.Sequence   (Seq)
+import qualified Data.Sequence   as S
 
-type Scores = Map Int [Int]
-initial :: Int -> (Scores,Int,[Int])
-initial numPlayers = (M.fromList $ zip [1..numPlayers] (repeat []),1,[0,1])
+type Scores = Map Int Integer
 
-removeAt :: Int -> [a] -> [a]
-removeAt idx ms = take idx ms ++ drop (idx + 1) ms
+data S = S
+    { sScores  :: !Scores
+    , sCurr    :: !Int
+    , sMarbles :: !(Seq Int)
+    }
+    deriving (Eq,Show)
 
-placeMarble :: (Scores, Int,[Int]) -> Int -> (Scores,Int,[Int])
-placeMarble (scores, curr,ms) new
-    | new `mod` 23 == 0 = (scores', removeMarbleIdx, ms'')
-    | otherwise = (scores, idx',ms')
+initial :: Int -> S
+initial numPlayers = S (M.fromList $ zip [1..numPlayers] (repeat 0)) 1 (S.fromList [0,1])
+
+placeMarble :: S -> Int -> S
+placeMarble (S scores curr ms) new
+    | new `mod` 23 == 0 = S scores' removeMarbleIdx (S.deleteAt removeMarbleIdx ms)
+    | otherwise = S scores idx' (S.insertAt idx' new ms)
     where
         pl = 1 + (new `mod` (M.size scores))
         removeMarbleIdx = (curr - 7) `mod` (length ms)
-        scores' = M.adjust ((++) [new, ms !! removeMarbleIdx]) pl scores
-        ms'' = removeAt removeMarbleIdx ms
+        scores' = M.adjust (+ fromIntegral (new + S.index ms removeMarbleIdx)) pl scores
 
         idx = (curr + 2) `mod` (length ms)
         idx' = if idx == 0 then length ms else idx
-        before = take idx' ms
-        after = drop idx' ms
-        ms' = before ++ new:after
 
-playGame :: Int -> Int -> [(Scores, Int,[Int])]
-playGame numPlayers marbles = scanl' placeMarble (initial numPlayers) [2..marbles]
+playGame' :: Int -> Int -> [S]
+playGame' numPlayers marbles = scanl' placeMarble (initial numPlayers) [2..marbles]
 
-playGame' numPlayers marbles = foldl' placeMarble (initial numPlayers) [2..marbles]
+playGame :: Int -> Int -> S
+playGame numPlayers marbles = foldl' placeMarble (initial numPlayers) [2..marbles]
 
+part1Sol :: Int -> Int -> Integer
+part1Sol numPlayers marbles = maximum $ sScores $ playGame numPlayers marbles
 
-part1Sol numPlayers marbles = maximum $ map sum $ M.elems $ (\(s,_,_) -> s) $ last $ playGame numPlayers marbles
-part2Sol numPlayers marbles = maximum $ map sum $ M.elems $ (\(s,_,_) -> s) $ playGame' numPlayers marbles
+part2Sol :: Int -> Int -> Integer
+part2Sol numPlayers marbles = maximum $ sScores $ playGame numPlayers marbles
+
+part1 :: Integer
 part1 = part1Sol 423 71944
+
+part2 :: Integer
 part2 = part2Sol 423 (71944 * 100)
 
 testWorks :: [Bool]
-testWorks = zipWith testEq (lines test) (playGame 9 25)
+testWorks = zipWith testEq (lines test) (playGame' 9 25)
 
-testEq :: String -> (Scores,Int,[Int]) -> Bool
-testEq t (_,p,m) = parseLine t == (p,m)
+testEq :: String -> S -> Bool
+testEq t (S _ p m) = parseLine t == (p,m)
 
-parseLine :: String -> (Int,[Int])
-parseLine xs = (length $ takeWhile ((/=) '(' . head ) ws, map read ws)
+parseLine :: String -> (Int,Seq Int)
+parseLine xs = (length $ takeWhile ((/=) '(' . head ) ws, S.fromList $ map read ws)
     where ws = words xs
 
 test :: String
