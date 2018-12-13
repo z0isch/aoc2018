@@ -111,8 +111,8 @@ part1 = do
   rs <- rules
   pure $ part1Sol rs initialState 20
 
-part2 :: IO (Sum Integer)
-part2 = pure $ magic 50000000000
+part2 :: Sum Integer
+part2 = magic 50000000000
 
 --98 position 72
 magic :: (Enum a, Num a) => a -> Sum a
