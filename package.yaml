@@ -39,6 +39,7 @@ library:
     - parallel
     - massiv
     - repa
+    - comonad
 
 executables:
   aoc2018-exe:
