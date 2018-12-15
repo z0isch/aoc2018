@@ -40,6 +40,8 @@ library:
     - massiv
     - repa
     - comonad
+    - regex-posix
+    - dlist
 
 executables:
   aoc2018-exe:
