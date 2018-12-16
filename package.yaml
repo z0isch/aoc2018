@@ -40,6 +40,7 @@ library:
     - massiv
     - repa
     - comonad
+    - monad-loops
 
 executables:
   aoc2018-exe:
@@ -52,7 +53,7 @@ executables:
       - -Wall
     dependencies:
       - aoc2018
-
+      - mtl
 tests:
   aoc2018-test:
     main: Spec.hs
