@@ -54,22 +54,22 @@ sol' :: Int -> A.MArray A.RealWorld A.S A.Ix2 Acre -> IO Int
 sol' n mArr = do
     initial <- A.freeze A.Par mArr
     go 0 (M.singleton initial 0)
-      where
-        answer final = length (filter (== 1) $ final) * length (filter (== 2) final)
-        go i m
-          | n == i = answer . A.toList <$> A.freeze A.Par mArr
-          | otherwise = do
-            next <- applyStencil <$> A.freeze A.Par mArr
-            if next `M.member` m
-              then
-                let r = m M.! next
-                    --Repeats between r and i, so we can index what we already have
-                    idx = r + ((n - r) `mod` ((i+1) - r))
-                in pure $ answer $ A.toList $ fst $ head $ filter ((== idx).snd) $ M.toList m
-              else do
-                let m' = M.insert next (i+1) m
-                A.imapP_ (\idx -> A.write' mArr idx) next
-                go (i+1) m'
+  where
+    answer final = length (filter (== 1) $ final) * length (filter (== 2) final)
+    go i m
+      | n == i = answer . A.toList <$> A.freeze A.Par mArr
+      | otherwise = do
+        next <- applyStencil <$> A.freeze A.Par mArr
+        if next `M.member` m
+          then
+            let r = m M.! next
+                --Repeats between r and i, so we can index what we already have
+                idx = r + ((n - r) `mod` ((i+1) - r))
+            in pure $ answer $ A.toList $ fst $ head $ filter ((== idx).snd) $ M.toList m
+          else do
+            let m' = M.insert next (i+1) m
+            A.imapP_ (\idx -> A.write' mArr idx) next
+            go (i+1) m'
 
 part1 :: IO Int
 part1 = do
