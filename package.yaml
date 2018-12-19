@@ -41,6 +41,7 @@ library:
     - repa
     - comonad
     - monad-loops
+    - fgl
 
 executables:
   aoc2018-exe:

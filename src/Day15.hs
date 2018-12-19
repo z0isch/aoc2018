@@ -19,6 +19,7 @@ import Control.Monad.Loops
 import Data.Monoid
 import qualified Data.Text       as T
 import qualified Data.Text.IO    as TIO
+import qualified Data.Graph.Inductive.Graph as G
 
 data C = C { _cX, _cY :: !Int}
     deriving (Eq,Show,Ord)
