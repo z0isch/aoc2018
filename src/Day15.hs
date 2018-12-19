@@ -17,6 +17,8 @@ import Safe hiding (at)
 import Control.Monad.State
 import Control.Monad.Loops
 import Data.Monoid
+import qualified Data.Text       as T
+import qualified Data.Text.IO    as TIO
 
 data C = C { _cX, _cY :: !Int}
     deriving (Eq,Show,Ord)
@@ -57,6 +59,9 @@ data S = S
     deriving (Eq,Show)
 makeLenses ''S
 
+input :: IO Cave
+input = caveP . lines . T.unpack <$> TIO.readFile "./input/day15.txt"
+
 tileP :: Char -> Tile
 tileP '.' = T Nothing
 tileP 'E' = T $ Just $ Unit E $ Stats 3 200
@@ -70,6 +75,7 @@ readingCompare :: C -> C -> Ordering
 readingCompare (C x1 y1) (C x2 y2)
     | y1 == y2 = compare x1 x2
     | otherwise = compare y1 y2
+
 
 hasUnit :: Tile -> Bool
 hasUnit (T (Just _)) = True
@@ -132,15 +138,15 @@ unitTurn :: Monad m => C -> StateT S m Bool
 unitTurn c = do
     s <- get
     if null $ enemies (s^.sCave) c
-    then pure False
-    else case attackTarget (s^.sCave) c of
-        Nothing -> case moveTarget (s^.sCave) c of
-            Nothing -> pure True
-            Just mt -> do
-                sCave.ix mt .= T (s^?sCave.at c._Just._T._Just) 
-                sCave.ix c .= T Nothing
-                doAttack mt
-        Just _ -> doAttack c
+        then pure False
+        else case attackTarget (s^.sCave) c of
+            Nothing -> case moveTarget (s^.sCave) c of
+                Nothing -> pure True
+                Just mt -> do
+                    sCave.ix mt .= T (s^?sCave.at c._Just._T._Just) 
+                    sCave.ix c .= T Nothing
+                    doAttack mt
+            Just _ -> doAttack c
 
 doAttack :: Monad m => C -> StateT S m Bool
 doAttack c = do
@@ -154,19 +160,24 @@ doAttack c = do
             when (hp <= 0) $ sCave.ix at._T .= Nothing
             pure True
 
-doRound :: Monad m => StateT S m Bool
+doRound :: StateT S IO Bool
 doRound = do
     s <- get
-    finished <- foldM (\b c -> if b then doAttack c else pure b) True $ sortBy readingCompare $ M.keys $ M.filter hasUnit $ s^.sCave
+    finished <- foldM (\b c -> if b then if isNothing (s^?sCave.at c._Just._T._Just) then pure b else unitTurn c else pure b) True $ sortBy readingCompare $ M.keys $ M.filter hasUnit $ s^.sCave
     when finished $ sRound += 1
+    get >>= lift . showS
     pure finished
 
-part1Sol :: Monad m => StateT S m (Integer, (Sum Int))
+part1Sol :: StateT S IO (Integer, (Sum Int))
 part1Sol = do
     _ <- iterateWhile id doRound
     s <- get
     let totHp = foldMap (Sum . fromMaybe 0 . (preview (_T._Just.uStats.sHp))) $ M.filter hasUnit $ s^.sCave
     pure $ (s^.sRound,totHp)
+
+part1 = do
+    c <- input
+    runStateT part1Sol (S c 0)
 
 showTile :: Tile -> Char
 showTile W = '#'
