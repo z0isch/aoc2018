@@ -42,6 +42,8 @@ library:
     - comonad
     - monad-loops
     - fgl
+    - regex-posix
+    - dlist
 
 executables:
   aoc2018-exe:

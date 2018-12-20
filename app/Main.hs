@@ -1,7 +1,7 @@
 module Main where
 
-import           Day15
-import Control.Monad.State
+import           Day19
 
 main :: IO ()
-main = part1 >>= print
+main = do
+  part2 >>= print
