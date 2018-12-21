@@ -40,6 +40,8 @@ library:
     - massiv
     - repa
     - comonad
+    - monad-loops
+    - fgl
     - regex-posix
     - dlist
 
@@ -54,7 +56,7 @@ executables:
       - -Wall
     dependencies:
       - aoc2018
-
+      - mtl
 tests:
   aoc2018-test:
     main: Spec.hs
