@@ -20,6 +20,7 @@ import Data.Monoid
 import qualified Data.Text       as T
 import qualified Data.Text.IO    as TIO
 import qualified Data.Graph.Inductive.Graph as G
+import Debug.Trace
 
 data C = C { _cX, _cY :: !Int}
     deriving (Eq,Show,Ord)
@@ -77,7 +78,6 @@ readingCompare (C x1 y1) (C x2 y2)
     | y1 == y2 = compare x1 x2
     | otherwise = compare y1 y2
 
-
 hasUnit :: Tile -> Bool
 hasUnit (T (Just _)) = True
 hasUnit _ = False
@@ -101,6 +101,27 @@ moveTargets cave c = filter (isOpen cave) $ concatMap adjacents $ enemies cave c
 adjacents :: C -> [C]
 adjacents (C x y) = [C (x+1) y, C (x-1) y, C x (y+1), C x (y-1)]
 
+newtype Sp = Sp (Seq C) deriving (Eq, Show)
+instance Ord Sp where
+    compare (Sp s1) (Sp s2) = case (compare (Seq.length s1) (Seq.length s2)) of
+        EQ -> compare s1 s2
+        c -> c
+
+sps :: Cave -> C -> C -> Maybe [Path]
+sps cave c1 c2 = if null sps then Nothing else Just sps
+    where
+        sps = map tail $ go maxBound (S.singleton (Sp $ pure c1)) mempty 
+        go :: Int -> Set Sp -> [Path] -> [Path]
+        go spLength ps found
+            | S.null ps = found
+            | spLength < Seq.length totP = found
+            | currP == c2 = go (Seq.length totP) ps' (foldMap pure totP:found)
+            | otherwise = go spLength ps'' found
+            where 
+                (Sp totP@(minP Seq.:|> currP), ps') = S.deleteFindMin ps
+                next = map (\c' -> Sp (totP Seq.|> c')) $ filter (\c' -> isOpen cave c' && notElem c' minP) $ adjacents currP
+                ps'' = foldr S.insert ps' next
+
 paths :: Cave -> C -> C -> [Path]
 paths cave c1 c2 = map tail $ go (S.singleton c1) c1
     where
@@ -118,7 +139,7 @@ nearestPaths :: Cave -> C -> C -> Maybe [Path]
 nearestPaths cave c1 c2 = leastsBy compare length $ paths cave c1 c2
 
 nearestTargetPaths :: Cave -> C -> Maybe [Path]
-nearestTargetPaths cave c = leastsBy compare length $ concat $ mapMaybe (nearestPaths cave c) $ moveTargets cave c
+nearestTargetPaths cave c = leastsBy compare length $ concat $ mapMaybe (sps cave c) $ moveTargets cave c
 
 moveTarget :: Cave -> C -> Maybe C
 moveTarget cave c = do
@@ -178,7 +199,8 @@ part1Sol = do
 
 part1 = do
     c <- input
-    runStateT part1Sol (S c 0)
+    (r,hp) <- evalStateT part1Sol (S c 0)
+    pure $ fromIntegral r * hp
 
 showTile :: Tile -> Char
 showTile W = '#'

@@ -12,7 +12,6 @@ import qualified Data.Sequence as S
 import Data.Maybe
 import qualified Data.Text         as T
 import qualified Data.Text.IO      as TIO
-import Debug.Trace
 
 type ProgLine = (OpCode,OpType,Integer, Integer, Integer)
 
