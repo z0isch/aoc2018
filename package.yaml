@@ -44,6 +44,7 @@ library:
     - fgl
     - regex-posix
     - dlist
+    - array
 
 executables:
   aoc2018-exe:

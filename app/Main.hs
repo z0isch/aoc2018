@@ -1,8 +1,9 @@
 module Main where
 
+import           Control.Monad.State
 import           Day15
-import Control.Monad.State
 
 main :: IO ()
-main = part1 >>= print
-  --print $ day14b [8,4,6,0,2,1]
+main = do
+  part1 >>= print
+  --evalStateT part1Sol (S test6 0) >>= print

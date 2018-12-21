@@ -2,25 +2,30 @@
 
 module Day15 where
 
-import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M
-import Data.List
-import Control.Lens
-import Control.Monad
-import Data.Maybe
-import Data.Function
-import Data.Set (Set)
-import qualified Data.Set as S
-import Data.Sequence (Seq)
-import qualified Data.Sequence as Seq
-import Safe hiding (at)
-import Control.Monad.State
-import Control.Monad.Loops
-import Data.Monoid
-import qualified Data.Text       as T
-import qualified Data.Text.IO    as TIO
-import qualified Data.Graph.Inductive.Graph as G
-import Debug.Trace
+import           Control.Lens
+import           Control.Monad
+import           Control.Monad.Loops
+import           Control.Monad.State
+import           Control.Parallel.Strategies
+import           Data.Array
+import           Data.Array                  as A
+import           Data.Array                  (Array)
+import           Data.Function
+import qualified Data.Graph.Inductive.Graph  as G
+import           Data.List
+import           Data.Map.Strict             (Map)
+import qualified Data.Map.Strict             as M
+import           Data.Maybe
+import           Data.Monoid
+import           Data.Sequence               (Seq)
+import qualified Data.Sequence               as Seq
+import           Data.Set                    (Set)
+import qualified Data.Set                    as S
+import qualified Data.Text                   as T
+import qualified Data.Text.IO                as TIO
+import           Debug.Trace
+import           Safe                        hiding (at)
+import           System.IO.Unsafe
 
 data C = C { _cX, _cY :: !Int}
     deriving (Eq,Show,Ord)
@@ -29,7 +34,7 @@ makeLenses ''C
 type Hp = Int
 type Ap = Int
 
-data Stats = Stats 
+data Stats = Stats
     { _sAp :: !Ap
     , _sHp :: !Hp
     }
@@ -40,8 +45,8 @@ data UnitType = G | E
     deriving (Eq,Show)
 makePrisms ''UnitType
 
-data Unit = Unit 
-    { _uType :: !UnitType
+data Unit = Unit
+    { _uType  :: !UnitType
     , _uStats :: !Stats
     }
     deriving (Eq,Show)
@@ -52,10 +57,10 @@ data Tile = W | T (Maybe Unit)
 makePrisms ''Tile
 
 type Cave = Map C Tile
-type Path = [C]
+type Path = Seq C
 
 data S = S
-    { _sCave :: !Cave
+    { _sCave  :: !Cave
     , _sRound :: !Integer
     }
     deriving (Eq,Show)
@@ -63,6 +68,8 @@ makeLenses ''S
 
 input :: IO Cave
 input = caveP . lines . T.unpack <$> TIO.readFile "./input/day15.txt"
+
+input' fn = caveP . lines . T.unpack <$> TIO.readFile fn
 
 tileP :: Char -> Tile
 tileP '.' = T Nothing
@@ -80,72 +87,69 @@ readingCompare (C x1 y1) (C x2 y2)
 
 hasUnit :: Tile -> Bool
 hasUnit (T (Just _)) = True
-hasUnit _ = False
+hasUnit _            = False
 
 isEnemy :: Unit -> Unit -> Bool
 isEnemy (Unit E _) (Unit G _) = True
 isEnemy (Unit G _) (Unit E _) = True
-isEnemy _ _ = False
+isEnemy _ _                   = False
 
 enemies :: Cave -> C -> [C]
-enemies cave c = M.keys $ M.filter (maybe False (isEnemy u) . preview (_T._Just)) cave
-    where 
-        (T (Just u)) = cave M.! c
+enemies cave c = case cave M.! c of
+        (T (Just u)) -> M.keys $ M.filter (maybe False (isEnemy u) . preview (_T._Just)) cave
+        _ -> unsafeShowCave cave $ error $ "Can't find " ++ show c
 
 isOpen :: Cave -> C -> Bool
-isOpen cave c = Just Nothing == cave^?at c._Just._T
+isOpen cave c = Just Nothing == atC
+    where atC = cave^?at c._Just._T
 
-moveTargets :: Cave -> C -> [C]
-moveTargets cave c = filter (isOpen cave) $ concatMap adjacents $ enemies cave c
+moveTargets :: Cave -> C -> Set C
+moveTargets cave c = S.fromList $ filter (isOpen cave) $ concatMap adjacents $ enemies cave c
 
 adjacents :: C -> [C]
 adjacents (C x y) = [C (x+1) y, C (x-1) y, C x (y+1), C x (y-1)]
 
+manhattenDist :: C -> C -> Int
+manhattenDist (C x1 y1) (C x2 y2) = abs(y2 - y1) + abs(x2 - x1)
+
 newtype Sp = Sp (Seq C) deriving (Eq, Show)
 instance Ord Sp where
     compare (Sp s1) (Sp s2) = case (compare (Seq.length s1) (Seq.length s2)) of
-        EQ -> compare s1 s2
-        c -> c
+        EQ -> GT
+        c  -> c
 
-sps :: Cave -> C -> C -> Maybe [Path]
-sps cave c1 c2 = if null sps then Nothing else Just sps
+unsafeShowCave :: Cave -> a -> a
+unsafeShowCave s expr = unsafePerformIO $ do
+    showCave s
+    return expr
+
+sps :: Cave -> C -> Maybe (Seq Path)
+sps cave c = if null candidates then Nothing else Just candidates
     where
-        sps = map tail $ go maxBound (S.singleton (Sp $ pure c1)) mempty 
-        go :: Int -> Set Sp -> [Path] -> [Path]
-        go spLength ps found
+        candidates = go (S.singleton c) maxBound (S.singleton (Sp $ pure c)) mempty
+        go :: Set C -> Int -> Set Sp -> Seq Path -> Seq Path
+        go seen spLength ps found
             | S.null ps = found
-            | spLength < Seq.length totP = found
-            | currP == c2 = go (Seq.length totP) ps' (foldMap pure totP:found)
-            | otherwise = go spLength ps'' found
-            where 
-                (Sp totP@(minP Seq.:|> currP), ps') = S.deleteFindMin ps
-                next = map (\c' -> Sp (totP Seq.|> c')) $ filter (\c' -> isOpen cave c' && notElem c' minP) $ adjacents currP
-                ps'' = foldr S.insert ps' next
-
-paths :: Cave -> C -> C -> [Path]
-paths cave c1 c2 = map tail $ go (S.singleton c1) c1
-    where
-        go seen c
-            | canEnd = [c:[c2]]
-            | otherwise = concatMap (\c' -> map (c:) $ go (S.insert c' seen) c') next
+            | spLength < Seq.length path = found
+            | nextToEnemy = go seen' (Seq.length path) ps' (found Seq.|> path)
+            | otherwise = go seen' spLength ps'' found
             where
-                canEnd = any (\c' -> c' == c2) next
-                next = filter (\c' -> isOpen cave c' && c' `S.notMember` seen) $ adjacents c
+                seen' = S.insert currP seen
+                (_ Seq.:<| path) = totP
+                (Sp totP@(_ Seq.:|> currP), ps') = S.deleteFindMin ps
+                nextToEnemy = any (`elem` myEnemies) as
+                myEnemies = S.fromList $ enemies cave c
+                as = adjacents currP
+                next = map (\c' -> Sp (totP Seq.|> c'))
+                    $ filter (\c' -> isOpen cave c' && c' `S.notMember` seen)
+                    $ as
+                ps'' = foldr S.insert ps' next
 
 leastsBy :: (Eq b) => (b -> b -> Ordering) -> (a->b) -> [a] -> Maybe [a]
 leastsBy f g = headMay . groupBy ((==) `on` g) . sortBy (f `on` g)
 
-nearestPaths :: Cave -> C -> C -> Maybe [Path]
-nearestPaths cave c1 c2 = leastsBy compare length $ paths cave c1 c2
-
-nearestTargetPaths :: Cave -> C -> Maybe [Path]
-nearestTargetPaths cave c = leastsBy compare length $ concat $ mapMaybe (sps cave c) $ moveTargets cave c
-
-moveTarget :: Cave -> C -> Maybe C
-moveTarget cave c = do
-    pns <- nearestTargetPaths cave c 
-    cs <- leastsBy readingCompare last pns
-    headMay $ minimumBy (readingCompare `on` head) cs
+moveTargetPath :: Cave -> C -> Maybe Path
+moveTargetPath cave c = minimumBy (readingCompare `on` (\(h Seq.:<| _) -> h)) <$> sps cave c
 
 attackTarget :: Cave -> C -> Maybe C
 attackTarget cave c = do
@@ -160,35 +164,47 @@ unitTurn :: Monad m => C -> StateT S m Bool
 unitTurn c = do
     s <- get
     if null $ enemies (s^.sCave) c
-        then pure False
-        else case attackTarget (s^.sCave) c of
-            Nothing -> case moveTarget (s^.sCave) c of
-                Nothing -> pure True
-                Just mt -> do
-                    sCave.ix mt .= T (s^?sCave.at c._Just._T._Just) 
-                    sCave.ix c .= T Nothing
-                    doAttack mt
-            Just _ -> doAttack c
+    then pure False
+    else case attackTarget (s^.sCave) c of
+        Nothing -> trace "finding path" $ case moveTargetPath (s^.sCave) c of
+            Nothing -> trace "no path" $ pure True
+            Just (mt Seq.:<| _) -> trace ("moving: " ++ show mt) $ do
+                sCave.ix mt .= T (s^?sCave.at c._Just._T._Just)
+                sCave.ix c .= T Nothing
+                doAttack mt
+        Just _ -> doAttack c
 
 doAttack :: Monad m => C -> StateT S m Bool
 doAttack c = do
     s <- get
     case attackTarget (s^.sCave) c of
-        Nothing -> pure True
-        Just at -> do
+        Nothing -> trace "not attacking" $ pure True
+        Just at -> trace ("attacking: " ++ show at) $ do
             [ap] <- use (sCave.ix c._T._Just.uStats.sAp.to pure)
             sCave.ix at._T._Just.uStats.sHp -= ap
             [hp] <- use (sCave.ix at._T._Just.uStats.sHp.to pure)
-            when (hp <= 0) $ sCave.ix at._T .= Nothing
+            when (hp <= 0) $ trace (show at ++ " has died") $ sCave.ix at._T .= Nothing
             pure True
 
 doRound :: StateT S IO Bool
 doRound = do
     s <- get
-    finished <- foldM (\b c -> if b then if isNothing (s^?sCave.at c._Just._T._Just) then pure b else unitTurn c else pure b) True $ sortBy readingCompare $ M.keys $ M.filter hasUnit $ s^.sCave
+    finished <- foldM foo True
+        $ sortBy readingCompare
+        $ M.keys
+        $ M.filter hasUnit
+        $ s^.sCave
     when finished $ sRound += 1
     get >>= lift . showS
     pure finished
+    where
+        foo b c = do
+            s <- get
+            if b
+            then if isNothing (s^?sCave.at c._Just._T._Just)
+                then pure b
+                else traceShow (c, s^?sCave.at c._Just._T._Just) $ unitTurn c
+            else pure b
 
 part1Sol :: StateT S IO (Integer, (Sum Int))
 part1Sol = do
@@ -203,8 +219,8 @@ part1 = do
     pure $ fromIntegral r * hp
 
 showTile :: Tile -> Char
-showTile W = '#'
-showTile (T Nothing) = '.'
+showTile W                     = '#'
+showTile (T Nothing)           = '.'
 showTile (T (Just (Unit E _))) = 'E'
 showTile (T (Just (Unit G _))) = 'G'
 
@@ -219,8 +235,14 @@ showCave c = mapM_ (putStrLn.foldMap (pure.showTile.snd)) $ Seq.chunksOf (maxX +
 testMoveTargets :: Bool
 testMoveTargets = expected == actual
     where
-        actual = sortBy readingCompare $ moveTargets test2 (C 1 1)
+        actual = sortBy readingCompare $ S.toList $ moveTargets test2 (C 1 1)
         expected = [C 3 1, C 5 1, C 2 2,C 5 2, C 1 3, C 3 3 ]
+
+test7 :: Cave
+test7 = caveP $ lines "#######\n#.E...#\n#.#..G#\n#.###.#\n#E#G#G#\n#...#G#\n#######"
+
+test6 :: Cave
+test6 = caveP $ lines "#########\n#G......#\n#.E.#...#\n#..##..G#\n#...##..#\n#...#...#\n#.G...G.#\n#.....G.#\n#########"
 
 test5 :: Cave
 test5= caveP $ lines "#######\n#.G...#\n#...EG#\n#.#.#G#\n#..G#E#\n#.....#\n#######"
