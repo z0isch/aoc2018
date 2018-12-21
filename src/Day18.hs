@@ -60,16 +60,17 @@ sol' n mArr = do
       | n == i = answer . A.toList <$> A.freeze A.Par mArr
       | otherwise = do
         next <- applyStencil <$> A.freeze A.Par mArr
+        let i' = i + 1
         if next `M.member` m
           then
             let r = m M.! next
                 --Repeats between r and i, so we can index what we already have
-                idx = r + ((n - r) `mod` ((i+1) - r))
+                idx = r + ((n - r) `mod` (i' - r))
             in pure $ answer $ A.toList $ fst $ head $ filter ((== idx).snd) $ M.toList m
           else do
-            let m' = M.insert next (i+1) m
+            let m' = M.insert next i' m
             A.imapP_ (\idx -> A.write' mArr idx) next
-            go (i+1) m'
+            go i' m'
 
 part1 :: IO Int
 part1 = do
