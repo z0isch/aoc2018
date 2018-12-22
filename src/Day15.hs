@@ -75,11 +75,9 @@ tileP _ i 'G'  = T $ Just $ Unit G (Stats 3 200) i
 tileP _ _ '#'  = W
 
 caveP :: Ap -> [String] -> Cave
-caveP ap cs = M.fromList
-    $ concat
-    $ foo
-    where
-        foo = map (\(y,c) -> zipWith (\x ch -> (V2 x y, tileP ap (x*y) ch)) [0..] c) $ zip [0..] cs
+caveP ap = M.fromList
+    . concatMap (\(y,cs) -> zipWith (\x c -> (V2 x y, tileP ap (x*y) c)) [0..] cs)
+    . zip [0..]
 
 readingCompare :: C -> C -> Ordering
 readingCompare (V2 x1 y1) (V2 x2 y2)
