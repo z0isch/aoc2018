@@ -49,6 +49,7 @@ library:
     - linear
     - psqueues
     - extra
+    - data-memocombinators
 
 executables:
   aoc2018-exe:
