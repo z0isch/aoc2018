@@ -50,6 +50,7 @@ library:
     - psqueues
     - extra
     - data-memocombinators
+    - hashable
 
 executables:
   aoc2018-exe:
