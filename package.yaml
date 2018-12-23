@@ -52,6 +52,7 @@ library:
     - data-memocombinators
     - hashable
     - intervals
+    - sbv
 
 executables:
   aoc2018-exe:
