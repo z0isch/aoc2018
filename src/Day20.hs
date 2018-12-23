@@ -1,29 +1,29 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 module Day20 where
 
-import Data.Void
-import           Data.Text                  (Text)
-import   qualified        Data.Text  as T
-import qualified Data.Text.IO               as TIO
-import Data.Functor
+import           Control.Lens
+import           Control.Monad.State.Strict
+import           Data.Functor
 import           Data.Map.Strict            (Map)
 import qualified Data.Map.Strict            as M
-import Control.Monad.State.Strict
-import Control.Lens
-import Data.Maybe
+import           Data.Maybe
+import           Data.Text                  (Text)
+import qualified Data.Text                  as T
+import qualified Data.Text.IO               as TIO
+import           Data.Void
 
 
 data C = C {_cX, _cY :: !Int} deriving (Eq,Show,Ord)
 makeLenses ''C
 
 data S = S
-    { _sDoors :: !(Map C [C])
-    , _sPos :: !C
+    { _sDoors    :: !(Map C [C])
+    , _sPos      :: !C
     , _sPosStack :: ![C]
-    , _sStr :: !String
+    , _sStr      :: !String
     }
     deriving (Eq,Show,Ord)
 makeLenses ''S
@@ -32,7 +32,7 @@ makeLenses ''S
 initialS = S mempty (C 0 0) mempty
 
 goDir :: Char -> C -> C
-goDir = \case 
+goDir = \case
     'N' -> cY +~ 1
     'S' -> cY -~ 1
     'E' -> cX +~ 1
@@ -71,7 +71,7 @@ totP i = execState sP (initialS i) ^. sDoors
 
 search :: Map C [C] -> Map C Int
 search graph = go [(C 0 0,0)] mempty
-    where 
+    where
         go [] vs = vs
         go ((c,len):xs) vs =
             let next = map (\c' -> (c',len+1)) $ filter (`M.notMember` vs) $ fromMaybe [] $ M.lookup c graph
