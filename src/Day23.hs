@@ -56,14 +56,14 @@ inRange x y z (c,r) = SBV.oneIf $ mDist SBV..<= SBV.literal r
   where
     mDist =  sbvManhattenDist c x y z
 
-part2Sol' :: HashSet Bot -> IO SBV.OptimizeResult
-part2Sol' hs = SBV.optimize SBV.Lexicographic $ do
+part2Sol :: HashSet Bot -> IO SBV.OptimizeResult
+part2Sol hs = SBV.optimize SBV.Lexicographic $ do
     [x, y, z] <- SBV.sIntegers ["x", "y", "z"]
     SBV.maximize "in range of most bots" . sum $ map (inRange x y z) $ HS.toList hs
     SBV.minimize "distance to 0" $ sbvManhattenDist 0 x y z
 
-part2' :: IO SBV.OptimizeResult
-part2' = parseInput >>= part2Sol'
+part2 :: IO SBV.OptimizeResult
+part2 = parseInput >>= part2Sol
 
 test :: HashSet Bot
 test = fromJust $ parseMaybe totP $ "pos=<10,12,12>, r=2\npos=<12,14,12>, r=2\npos=<16,12,12>, r=4\npos=<14,14,14>, r=6\npos=<50,50,50>, r=200\npos=<10,10,10>, r=5"
