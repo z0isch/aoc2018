@@ -17,6 +17,9 @@ import Data.Foldable
 import Data.Function
 import qualified Data.HashSet as HS
 import Data.HashSet (HashSet)
+import qualified Numeric.Interval as I
+import Data.Function
+import Data.List
 
 type C = V3 Integer
 type P = Parsec Void Text
@@ -39,3 +42,15 @@ part1Sol hs = let (c1,r) = maximumBy (compare `on` snd) hs in length $ HS.filter
 
 part1 :: IO Int
 part1 = part1Sol <$> parseInput
+
+mkI :: Bot -> I.Interval C
+mkI (c,r) = I.inflate (V3 r r r) $ I.singleton c
+
+biggestInt :: HashSet Bot -> I.Interval C
+biggestInt hs = snd $ maximumBy (compare `on` fst) [ints ((\i -> (0,i)) $ mkI i) (map mkI (HS.toList (HS.delete i hs))) | i <-HS.toList hs]
+    where
+        ints = foldr (\c (n,i) -> if I.null (I.intersection c i) then (n,i) else (n+1,I.intersection c i))
+
+part2Sol hs = head $ dropWhile (I.null . I.intersection bI) $ iterate (I.inflate (V3 1 1 1)) $ I.singleton (V3 0 0 0)
+    where
+        bI = biggestInt hs

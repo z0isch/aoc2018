@@ -51,6 +51,7 @@ library:
     - extra
     - data-memocombinators
     - hashable
+    - intervals
 
 executables:
   aoc2018-exe:
