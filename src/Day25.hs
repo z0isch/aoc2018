@@ -15,6 +15,7 @@ import qualified Data.Text.IO               as TIO
 import           Data.HashSet               (HashSet)
 import qualified Data.HashSet               as HS
 import Data.Maybe
+import Linear.Vector
 
 type C = V4 Int
 type P = Parsec Void Text
@@ -29,7 +30,7 @@ totP = cP `sepBy` "\n"
 cP =  (\[x,y,z,t] -> V4 x y z t) <$> (L.signed (void "") L.decimal) `sepBy` ","
 
 manhattenD :: C -> C -> Int
-manhattenD (V4 x1 y1 z1 t1) (V4 x2 y2 z2 t2) = abs (x1-x2) + abs (y1-y2) + abs (z1-z2) + abs (t1-t2)
+manhattenD c1 c2 = sum $ fmap abs $ c1 - c2
 
 sameConst :: C -> HashSet C -> Bool
 sameConst c = any ((<= 3) . manhattenD c)
